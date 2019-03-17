@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!-- 配置扫描注解,不扫描@Controller注解的bean,而扫描所有bean,service,
+         @Controller注解的bean交给SpringMVC配置文件扫描,避免被创建两次 -->
+    <context:component-scan base-package="com.xp">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+    </context:component-scan>
+
+    <!-- 配置数据源 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" destroy-method="close">
+        <property name="driverClassName" value="${jdbc.driverClassName}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+    </bean>
+
+    <!-- 整合mybatis -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- 加载数据源 -->
+        <property name="dataSource" ref="dataSource"/>
+        <!-- 扫描所有的 mybatis配置文件 -->
+        <property name="configLocation" value="classpath:mybatis.xml"/>
+        <!-- 扫描所有的 mapper.xml -->
+        <!--<property name="mapperLocations" value="classpath:com/xp/mapper/*.xml"/>-->
+    </bean>
+
+    <!-- 扫描所有mapper接口文件,初始化所有dao -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.xp.dao"/>
+    </bean>
+
+    <!--
+        *
+        *
+        *注解实现spring事务
+        *
+        *
+     -->
+    <!-- 第一步,配置事务管理器 -->
+    <bean id="transactionManager1"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!-- 注入数据源 -->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!-- 第二步, 开启事务注解,用于注解实现事务管理 -->
+    <tx:annotation-driven transaction-manager="transactionManager1"/>
+
+    <!-- 加载其他配置文件 -->
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <context:property-placeholder location="classpath:log4j.properties"/>
+    <import resource="shiro-spring.xml"/>
+</beans>
